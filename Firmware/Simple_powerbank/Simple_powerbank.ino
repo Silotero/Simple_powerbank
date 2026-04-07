@@ -23,24 +23,25 @@ unsigned long lastSwitchTime = 0;
 // PORTA_PORT_vect = The hardware address for ANY interrupt on Port A
 ISR(PORTA_PORT_vect) {
     // 1. Check WHICH pin fired (Critical if you have multiple interrupts on Port A)
-    // We check if the Interrupt Flag (INTFLAGS) for Pin 2 is set.
+    // We check if the Interrupt Flag (INTFLAGS) for Pin 2 is set, since that is where the interrupt from the MP2722 is connected
     if (PORTA.INTFLAGS & PIN2_bm) {
         
-        // 2. Your Logic
+        // 2. Set the eventDetected to true to use it later
         eventDetected = true;
 
         // 3. Clear the Interrupt Flag (CRITICAL!)
-        // Writing '1' to the flag bit actually clears it.
-        // If you forget this, the interrupt will fire again immediately forever.
+        // Writing '1' to the flag bit aclears it
+        // If not cleared, the interrupt will fire again immediately forever.
         PORTA.INTFLAGS = PIN2_bm; 
     }
 }
 
 void setup() {
-    // 1. Setup Interrupt Pin (FALLING EDGE is mandatory for Pulse)
+    //Start I2C on the attiny404
     Wire.begin();
-    //PORTB.DIRSET = PIN2_bm; // stat pin, read to find out if  pinB2
-    PORTA.DIRCLR = PIN2_bm; // Assuming INT is on PA2
+    //PORTB.DIRSET = PIN2_bm; // stat pin, read to find out if pinB2
+    // Setting up the interrupt
+    PORTA.DIRCLR = PIN2_bm; // Assuming INT is on PA2, set up as input
     PORTA.PIN2CTRL = PORT_ISC_FALLING_gc; // to read the falling edge on interrupt pin
 
     PORTA.DIRSET = PIN5_bm | PIN6_bm | PIN7_bm;
@@ -58,7 +59,7 @@ void setup() {
     VREF.CTRLA |= VREF_ADC0REFSEL_2V5_gc;
     // 2. Configure the ADC Prescaler
     // We want the ADC clock to be between 50kHz and 1.5MHz.
-    // Assuming 20MHz CPU clock, DIV32 gives ~625kHz (Perfect).
+    // Assuming 20MHz CPU clock, DIV32 gives ~625kHz.
     ADC0.CTRLC = ADC_PRESC_DIV32_gc; // or DIV16_gc if running at 10MHz
     // 3. Enable the ADC (10-bit resolution is default)
     ADC0.CTRLA = ADC_ENABLE_bm | ADC_RESSEL_10BIT_gc;
@@ -86,7 +87,7 @@ void loop() {
     }
 
     if (faultDetected) {
-        digitalWrite(Problem_LED, (millis() / 250) % 2); // Fast blink
+        digitalWrite(Problem_LED, (millis() / 250) % 2); // Fast blink the problem indicating led
         if ((millis() / 250) % 10) {
             faultDetected = charger.checkFaultStatus();
         }
@@ -106,7 +107,7 @@ void loop() {
     }
 }
 
-void showBatteryLevel() {
+void showBatteryLevel() { // this lights up battery indicator leds
     // 1. Read ADC
     // We take a few samples and average them to remove noise
     unsigned long currentMicros = micros();
@@ -129,7 +130,7 @@ void showBatteryLevel() {
 
         // 2. Clear ALL LEDs (Atomic & Fast)
         // Instead of looping to find which ones to turn off, just kill them all.
-        // (Assuming LEDs are on PA4, PA5, PB0, PB1 - update if different!)
+        // LEDs are on PA4, PA5, PB0, PB1
         PORTA.OUTCLR = PIN4_bm | PIN5_bm;
         PORTB.OUTCLR = PIN0_bm | PIN1_bm;
 
