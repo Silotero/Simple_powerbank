@@ -1,0 +1,22 @@
+# --- KICAD ---
+*.bak
+*-bak
+*.bck
+*~
+_autosave-*
+*.tmp
+*.lock
+*.net
+*.dcm
+*.kicad_prl
+fp-info-cache
+Simple_powerbank_gerber/
+Simple_powerbank-backups/
+
+# --- ARDUINO ---
+# Ignoruj foldery budowania (kompilacji)
+build/
+*.elf
+*.hex
+*.bin
+*.map
