@@ -8659,7 +8659,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "100n"
+		(property "Value" "220n"
 			(at 267.97 34.2899 0)
 			(effects
 				(font
@@ -11060,7 +11060,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "100n"
+		(property "Value" "220n"
 			(at 205.74 148.5899 0)
 			(effects
 				(font
@@ -11916,7 +11916,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "2.2u"
+		(property "Value" "22u"
 			(at 151.13 33.0199 0)
 			(effects
 				(font
@@ -12054,7 +12054,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "4.7u"
+		(property "Value" "220n"
 			(at 74.93 81.2799 0)
 			(effects
 				(font
