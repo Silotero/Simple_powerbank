@@ -7,16 +7,18 @@ volatile bool eventDetected = false; // got an interrupt or not
 bool faultDetected = false; // read a register, got fault/no fault, used for lighting up fault problem led
 
 const int PIN_BATT  = PIN_PA3;  // Battery divider input
-const int Battery_LED_PINS[] = {PIN_PB3, PIN_PA7, PIN_PA6, PIN_PA5}; // LED gpios
-const int Problem_LED = PIN_PA4;
+const int Battery_LED_PINS[] = {PIN_PA4, PIN_PA5, PIN_PA6, PIN_PA7}; // LED gpios
+const int Problem_LED = PIN_PB3;
 
 // Voltage levels for 1, 2, 3, 4 LEDs
-const uint16_t BATT_THRESHOLDS[] = {696, 737, 778, 855}; // Pre-calculated ADC thresholds for: 3.4V, 3.6V, 3.8V, 4.18V
+const uint16_t BATT_THRESHOLDS[] = {696, 737, 778, 830}; // Pre-calculated ADC thresholds for: 3.4V, 3.6V, 3.8V, 4.06V
 
 const unsigned long SWITCH_INTERVAL = 2500; // 2500 microseconds = 2.5ms
 // Variables for Multiplexing
 int currentLedIndex = 0;
 unsigned long lastSwitchTime = 0;
+unsigned long lastAdcTime = 0;
+uint16_t rawAvg = 0;
 
 // The Hardware ISR
 // ISR = Interrupt Service Routine
@@ -44,14 +46,11 @@ void setup() {
     PORTA.DIRCLR = PIN2_bm; // Assuming INT is on PA2, set up as input
     PORTA.PIN2CTRL = PORT_ISC_FALLING_gc; // to read the falling edge on interrupt pin
 
-    PORTA.DIRSET = PIN5_bm | PIN6_bm | PIN7_bm;
+    PORTA.DIRSET = PIN4_bm | PIN5_bm | PIN6_bm | PIN7_bm;
     PORTB.DIRSET = PIN3_bm; // Setting up the leds pins as outputs
 
-    PORTA.OUTCLR = PIN5_bm | PIN6_bm | PIN7_bm;
+    PORTA.OUTCLR = PIN4_bm | PIN5_bm | PIN6_bm | PIN7_bm;
     PORTB.OUTCLR = PIN3_bm; // Setting low output for the led pins
-
-    PORTA.DIRSET = PIN4_bm; // Problem led pin as output PIN_PA4
-    VPORTA.OUT &= ~PIN4_bm; // set problem led pin output to low
 
     PORTA.DIRCLR = PIN3_bm; // PIN_PA3 set as input, for reading battery voltage divider
     // 1. Set Voltage Reference to Internal 2.5V
@@ -60,7 +59,7 @@ void setup() {
     // 2. Configure the ADC Prescaler
     // We want the ADC clock to be between 50kHz and 1.5MHz.
     // Assuming 20MHz CPU clock, DIV32 gives ~625kHz.
-    ADC0.CTRLC = ADC_PRESC_DIV32_gc; // or DIV16_gc if running at 10MHz
+    ADC0.CTRLC = ADC_PRESC_DIV16_gc; // or DIV16_gc if running at 10MHz
     // 3. Enable the ADC (10-bit resolution is default)
     ADC0.CTRLA = ADC_ENABLE_bm | ADC_RESSEL_10BIT_gc;
 
@@ -70,13 +69,12 @@ void setup() {
     }
 
     // setup the sleep workarounds of the attiny404
-    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-    sei();
-    
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN); 
 }
 
 void loop() {
     static unsigned long last_sleep_check = 0;
+    unsigned long current_millis = millis();
     showBatteryLevel();
     // 1. Handle Events
     if (eventDetected) {
@@ -84,26 +82,29 @@ void loop() {
         if (charger.processInterrupt()) {
             faultDetected = true;
         }
+        else faultDetected = false;
     }
 
     if (faultDetected) {
-        digitalWrite(Problem_LED, (millis() / 250) % 2); // Fast blink the problem indicating led
-        if ((millis() / 250) % 10) {
-            faultDetected = charger.checkFaultStatus();
-        }
+        digitalWrite(Problem_LED, (current_millis / 250) % 2); // Fast blink the problem indicating led
     }
 
     // 2. Periodically check "Canary" (in case Watchdog reset happened silently)
     static unsigned long lastCheck = 0;
-    if (millis() - lastCheck > 10000) {
+    if (current_millis - lastCheck > 10000) {
         if (charger.wasReset()) {
             charger.begin(); // Re-apply settings
         }
-        lastCheck = millis();
+        lastCheck = current_millis;
     }
     
-    if (!charger.isChargingDischarging() && millis() - last_sleep_check > 15000) {
-        charger.gotosleep();
+    if (current_millis - last_sleep_check > 15000) {
+        if (!charger.isChargingDischarging()) {
+            PORTA.OUTCLR = PIN4_bm | PIN5_bm | PIN6_bm | PIN7_bm;
+            PORTB.OUTCLR = PIN3_bm;
+            charger.gotosleep();
+        }
+        last_sleep_check = current_millis;
     }
 }
 
@@ -111,12 +112,17 @@ void showBatteryLevel() { // this lights up battery indicator leds
     // 1. Read ADC
     // We take a few samples and average them to remove noise
     unsigned long currentMicros = micros();
-    uint16_t rawSum = 0;
-    for(uint8_t i = 0; i < 5; i++) {
-        rawSum += readBatteryADC(); // Direct hardware read
-        delay(2);
+    if (currentMicros - lastAdcTime >= 500000) { 
+        lastAdcTime = currentMicros;
+        uint16_t rawSum = 0;
+        for(uint8_t i = 0; i < 4; i++) {
+            rawSum += readBatteryADC(); // Direct hardware read
+        }
+        rawAvg = rawSum >> 2;
+        if (rawAvg > 850) {
+             if (charger.FinishedCharging()) VPORTB.OUT |= PIN3_bm;
+        }
     }
-    uint16_t rawAvg = rawSum / 5;
 
     // 3. Update LEDs
     // Workings of the battery indication: the leds gets cycled so only one is actually on at a time, the leds light up based on if the battery level is higher than the set level for the charge. If the charge is below 3.4 the first leds flickers
@@ -130,9 +136,8 @@ void showBatteryLevel() { // this lights up battery indicator leds
 
         // 2. Clear ALL LEDs (Atomic & Fast)
         // Instead of looping to find which ones to turn off, just kill them all.
-        // LEDs are on PA4, PA5, PB0, PB1
-        PORTA.OUTCLR = PIN4_bm | PIN5_bm;
-        PORTB.OUTCLR = PIN0_bm | PIN1_bm;
+        // LEDs are on PA4, PA5, PA6, PA7
+        PORTA.OUTCLR = PIN4_bm | PIN5_bm | PIN6_bm | PIN7_bm;
 
         // 3. Logic: Should the CURRENT LED be ON?
         bool shouldTurnOn = false;
@@ -153,8 +158,8 @@ void showBatteryLevel() { // this lights up battery indicator leds
             switch (currentLedIndex) {
                 case 0: VPORTA.OUT |= PIN4_bm; break; // PA4
                 case 1: VPORTA.OUT |= PIN5_bm; break; // PA5
-                case 2: VPORTB.OUT |= PIN0_bm; break; // PB0
-                case 3: VPORTB.OUT |= PIN1_bm; break; // PB1
+                case 2: VPORTA.OUT |= PIN6_bm; break; // PA6
+                case 3: VPORTA.OUT |= PIN7_bm; break; // PA7
             }
         }
     }

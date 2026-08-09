@@ -19,23 +19,23 @@
 #define REG_VIN_LIM_PERMANENT_SETTINGS 0xBC
 #define REG_VBATT         0x05 // SETS THE BATT CHARGE VOLTAGE LIMIT, LEAVE AT DEFAULT FOR 4.2V
 #define REG_VBATT_PERMANENT_SETTINGS 0x18
-#define REG_VIN_OVP_SYS_MIN_TREG       0x06 // [7,6] VIN_OVP = 00 FOR 6.3V [5,4,3] SYS_MIN = 100 FOR 3.588V [2,1,0] TREG = 100 FOR 100 C THERMAL THRESHOLD OF THE MP2722, LEAVE AT DEFAULT FOR NOW 
-#define REG_VIN_OVP_SYS_MIN_TREG_PERMANENT_SETTINGS 0x24
+#define REG_VIN_OVP_SYS_MIN_TREG       0x06 // [7,6] VIN_OVP = 00 FOR 6.3V [5,4,3] SYS_MIN = 001 FOR 3.15V [2,1,0] TREG = 100 FOR 100 C THERMAL THRESHOLD OF THE MP2722, LEAVE AT DEFAULT FOR NOW 
+#define REG_VIN_OVP_SYS_MIN_TREG_PERMANENT_SETTINGS 0x0C
 #define REG_WATCHDOG     0x07 // [7] IB_EN = 0 [6] WATCHDOG_RST = 0 [5,4] WATCHDOG = 00 TO DISABLE THE TIMER [3] EN_TERM = 1 [2] EN_TMR2X = 1 [1,0] CHG_TIMER = 11 SETS MAX CHARGE TIME FOR 15 HRS
 #define REG_WATCHDOG_PERMANENT_SETTINGS 0x0F
-#define REG_VBOOST 0x08 // 
+#define REG_VBOOST 0x08 // 3A wyjścia, 5,1V wyjścia
 #define REG_VBOOST_PERMANENT_SETTINGS 0x7E
-#define REG_CC_CFG_AUTOOTG_EN_BOOST_EN_BUCK_EN_CHG 0x09 // [7] RESERVED [6,5,4] CC_CFG = 100 SETS FOR DRP WITH TRY.SNK [3] AUTOOTG = 1 [2] EN_BOOST = 0 [1] EM_BUCK = 1 [0] EN_CHG = 1
+#define REG_CC_CFG_AUTOOTG_EN_BOOST_EN_BUCK_EN_CHG 0x09 // [7] RESERVED [6,5,4] CC_CFG = 100 SETS FOR DRP WITH TRY.SRC [3] AUTOOTG = 1 [2] EN_BOOST = 0 [1] EM_BUCK = 1 [0] EN_CHG = 1
 #define REG_CC_CFG_AUTOOTG_EN_BOOST_EN_BUCK_EN_CHG_PERMANENT_SETTINGS 0x4B
 #define REG_CONFIG    0x0A // [7,6] RESERVED [5] AUTODPDM = 1 D+/D- DETECTION AUTOMATICALLY STARTS AFTER VIN_GD = 1 [4] FORCEDPDM = 0 [3,2] RP_CFG = 10 SETS CURRENT RATING ADVERTISEMENT 3A [1,0] FORCE_CC = 00
 #define REG_CONFIG_PERMANENT_SETTINGS 0x28
 #define REG_HV_ADAPTER      0x0B // [7,6,5] RESERVED [4] HVEN = 1 ENABLES HIGH-VOLTAGE ADAPTER [3] HVUP = 0 [2] HVDOWN = 0 HVREQ = 00
 #define REG_HV_ADAPTER_PERMANENT_SETTINGS 0x10
-#define REG_BATT_LOW     0x0C // [7] RESERVED [6] NTC1_ACTION = 1 [5] NTC2_ACTION = 0 [4] BATT_OVP_EN = 1 [3,2] BATT_LOW = 11 3.2V [1] BOOST_STP_EN = 1 [0] BOOST_OTP_EN = 1
-#define REG_BATT_LOW_PERMANENT_SETTINGS 0x5F
+#define REG_BATT_LOW     0x0C // [7] RESERVED [6] NTC1_ACTION = 0 [5] NTC2_ACTION = 0 [4] BATT_OVP_EN = 1 [3,2] BATT_LOW = 11 3.3V [1] BOOST_STP_EN = 1 [0] BOOST_OTP_EN = 1
+#define REG_BATT_LOW_PERMANENT_SETTINGS 0x1F
 //#define REG_WARM_JEITA 0x0D // leave default
 //#define REG_VHOT_VWARM_VCOOL 0x0E // sets temperatures for working, leave default
-#define REG_IMPEDANCE_TESTING 0x0F // tests for whether humidity or water got into the port, think of how to use it
+//#define REG_IMPEDANCE_TESTING 0x0F // tests for whether humidity or water got into the port, think of how to use it
 #define REG_INT_MASKING 0x10 // [7,6] RESERVED [5] THERM_MASK = 1 [4] MASK_DPM = 1 [3] MASK_TOPOFF = 1 [2] MASK_CC_INT = 0 [1] MASK_BATT_LOW = 0 [0] MASK_DEBUG_AUDIO = 1   
 #define REG_INT_MASKING_PERMANENT_SETTINGS 0x39
 #define REG_DPDM_STAT 0x11 // register that tells what kind of charger/device has been plugged in based on D+/D- detection, READ ONLY
@@ -59,13 +59,13 @@ class MP2722 {
 
     // Manual Features
     bool checkMoisture();       // Returns true if wet
-    void requestHighVoltage_9V();  // Try to get 9V from QC charger
-    void requestHighVoltage_12V();  // Try to get 9V from QC charger
+    //void requestHighVoltage_9V();  // Try to get 9V from QC charger
+    //void requestHighVoltage_12V();  // Try to get 9V from QC charger
     bool wasReset();            // Check "Canary" to see if power was lost
 
     void gotosleep();
-    bool checkFaultStatus();
     bool isChargingDischarging();
+    bool FinishedCharging();
 
     // Setters (if needed manually)
     //void setInputCurrent(float amps);

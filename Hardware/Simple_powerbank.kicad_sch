@@ -4623,7 +4623,7 @@
 		)
 		(uuid "39363175-3188-4b0f-a5a1-b17802c0adee")
 	)
-	(text "VCC filtering and bulk for ATTINY404\nPlace 4.7u near VCC\nPlace 220n near ATTINY \n"
+	(text "VCC filtering and bulk for ATTINY404\nPlace 4.7u near VCC\nPlace 470n near ATTINY \n"
 		(exclude_from_sim no)
 		(at 86.36 71.12 0)
 		(effects
@@ -7247,7 +7247,7 @@
 				)
 			)
 		)
-		(property "Value" "LED"
+		(property "Value" "Problem_led"
 			(at 181.2925 66.04 0)
 			(effects
 				(font
@@ -7478,7 +7478,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://ngspice.sourceforge.io/docs/ngspice-html-manual/manual.xhtml#cha_MOSFETs"
+		(property "Datasheet" "https://www.tme.eu/pl/details/wms15n03t1-cyg/tranzystory-z-kanalem-n-smd/wayon/wms15n03t1/"
 			(at 85.09 27.94 0)
 			(effects
 				(font
@@ -8110,7 +8110,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "220n"
+		(property "Value" "470n"
 			(at 88.9 81.2799 0)
 			(effects
 				(font
@@ -8524,7 +8524,7 @@
 				)
 			)
 		)
-		(property "Value" "1k"
+		(property "Value" "1k5"
 			(at 190.5 66.04 90)
 			(effects
 				(font
@@ -9459,7 +9459,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://www.way-on.cn/upload/202301/31/202301311441465755.pdf"
+		(property "Datasheet" "https://www.tme.eu/pl/details/wms15n03t1-cyg/tranzystory-z-kanalem-n-smd/wayon/wms15n03t1/"
 			(at 85.09 63.5 0)
 			(effects
 				(font
@@ -9540,7 +9540,7 @@
 				)
 			)
 		)
-		(property "Value" "Problem_led"
+		(property "Value" "Led"
 			(at 181.2925 57.15 0)
 			(effects
 				(font
@@ -12054,7 +12054,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "220n"
+		(property "Value" "4.7u"
 			(at 74.93 81.2799 0)
 			(effects
 				(font
@@ -12258,7 +12258,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "220n"
+		(property "Value" "470n"
 			(at 104.14 81.2799 0)
 			(effects
 				(font

@@ -11,13 +11,13 @@ const uint8_t STARTUP_CONFIG[13] = {
     0xFF,
     0xBC,
     0x18,
-    0x24,
+    0x0C,
     0x0F,
     0x7E,
     0x4B,
     0x28,
     0x10,
-    0x5F
+    0x1F
 };
 
 bool MP2722::begin() {
@@ -37,12 +37,13 @@ bool MP2722::begin() {
 
 void MP2722::gotosleep() {
     sleep_enable();
+    sei();
     sleep_cpu();
     sleep_disable();
 }
 
-bool MP2722::checkFaultStatus() {
-    if (readReg(0x13) & 0x1F) { // a fault has occured with boost or charging
+bool MP2722::FinishedCharging() {
+    if (readReg(0x13) & 0xA0) {
         return 1;
     }
     return 0;
@@ -50,28 +51,25 @@ bool MP2722::checkFaultStatus() {
 
 bool MP2722::isChargingDischarging() {
     uint8_t status_registers[2]; 
-    status_registers[0] = readReg(0x13); // charge status, boost fault, charge fault status register
-    status_registers[1] = readReg(0x09); // charge status, boost fault, charge fault status register
-    if (status_registers[0] & 0xE0 || status_registers[1] & 0x4) { // checks whether charging or discharging is happening
+    status_registers[0] = readReg(0x13); // charge status, checking if charge is happening or is done but plugged in
+    status_registers[1] = readReg(0x09); // checks if boost is enabled, meaning it is charging a device
+    if (status_registers[0] & 0xE0 || status_registers[1] & 0x04) { // checks whether charging or discharging is happening
         return 1;
     }
     return 0;
 }
 
 bool MP2722::processInterrupt() { // Set what happens when the pulse was detected on interrupt pin
-    uint8_t status_registers[2]; 
-    
-    status_registers[0] = readReg(0x13); // charge status, boost fault, charge fault status register
-    status_registers[1] = readReg(0x16); // battery low status register bit 4
+    uint8_t status_registers = readReg(0x13); // charge status, boost fault, charge fault status register
 
     // --- Decode the Status ---
 
-    if (status_registers[1] & 0x10) {
+    if (status_registers & 0x10) {
         gotosleep(); // battery low interrupt was sent, boost was turned off, put device to sleep
         return 0;
     }
 
-    if (status_registers[0] & 0x1F) { // a fault has occured with boost or charging
+    if (status_registers & 0x0F) { // input source not valid or booost/charger faults, excluding boost stopped due to batt low
         return 1;
     }
     return 0;
